@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme - Clean, professional civic interface */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    /* Cards with subtle elevation */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Elevated surfaces */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Nigerian green as primary */
+    --primary: 145 63% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Cool gray */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Muted surfaces */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent - Teal */
+    --accent: 173 80% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+    
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    /* Risk levels */
+    --risk-critical: 0 72% 51%;
+    --risk-high: 25 95% 53%;
+    --risk-medium: 38 92% 50%;
+    --risk-low: 142 76% 36%;
+    --risk-none: 220 14% 80%;
+
+    /* Borders and inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 145 63% 32%;
+
+    --radius: 0.75rem;
+
+    /* Chart colors */
+    --chart-1: 145 63% 32%;
+    --chart-2: 173 80% 36%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 72% 51%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 145 63% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 145 63% 32%;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(145 63% 32%), hsl(173 80% 36%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 72% 51%), hsl(25 95% 53%));
+    --gradient-surface: linear-gradient(180deg, hsl(210 20% 98%), hsl(220 14% 96%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(145 63% 32% / 0.08), transparent 70%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .glass {
+    @apply bg-card border border-border shadow-sm;
+  }
+
+  .glass-strong {
+    @apply bg-card border border-border shadow-md;
+  }
+
+  .glow-primary {
+    box-shadow: 0 4px 20px hsl(145 63% 32% / 0.15);
+  }
+
+  .glow-danger {
+    box-shadow: 0 4px 20px hsl(0 72% 51% / 0.15);
+  }
+
+  .pulse-live {
+    animation: pulse-live 2s ease-in-out infinite;
+  }
+
+  .fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  .slide-up {
+    animation: slide-up 0.5s ease-out forwards;
+  }
+
+  .number-scroll {
+    animation: number-scroll 0.3s ease-out;
+  }
+}
+
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes number-scroll {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Map styles */
+.area-council {
+  transition: all 0.3s ease;
+}
+
+.area-council:hover {
+  filter: brightness(1.2);
+}
+
+/* Mono font for data */
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
