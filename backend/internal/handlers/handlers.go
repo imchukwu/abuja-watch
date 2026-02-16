@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv" // Added
 
 	"github.com/go-chi/chi/v5"
+	"github.com/yiaga/abuja-watch/backend/internal/auth" // Added
 	"github.com/yiaga/abuja-watch/backend/internal/db"
+	"github.com/yiaga/abuja-watch/backend/internal/middleware" // Added
 	"github.com/yiaga/abuja-watch/backend/internal/models"
 )
 
@@ -148,6 +152,132 @@ func GetAreaCouncils(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(summaries)
+}
+
+// ==========================================
+// Auth Handlers
+// ==========================================
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string      `json:"token"`
+	User  models.User `json:"user"`
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var user models.User
+	err := db.DB.QueryRow("SELECT id, username, password_hash, role FROM users WHERE username = $1", req.Username).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
+	if err != nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	if !auth.CheckPasswordHash(req.Password, user.Password) {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := auth.GenerateJWT(fmt.Sprintf("%d", user.ID), user.Role)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	// Audit Login
+	logAudit(user.ID, "LOGIN", "User logged in", r)
+
+	user.Password = "" // Don't send hash back
+	json.NewEncoder(w).Encode(LoginResponse{Token: token, User: user})
+}
+
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Enforce RBAC: Only admin can create users
+	// This should be double-checked here even if middleware handles it, as extra safety
+	// But middleware.RequireRole("admin") will handle it.
+
+	hash, err := auth.HashPassword(user.Password)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.DB.Exec("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)", user.Username, hash, user.Role)
+	if err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
+	}
+
+	// Audit
+	userID, _ := strconv.Atoi(r.Context().Value(middleware.UserKey).(string))
+	logAudit(userID, "CREATE_USER", fmt.Sprintf("Created user %s", user.Username), r)
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func GetUsers(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.DB.Query("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Username, &u.Role, &u.CreatedAt); err != nil {
+			continue
+		}
+		users = append(users, u)
+	}
+
+	json.NewEncoder(w).Encode(users)
+}
+
+func GetAuditLogs(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.DB.Query(`
+		SELECT a.id, a.user_id, u.username, a.action, a.details, a.ip_address, a.timestamp 
+		FROM audit_logs a 
+		JOIN users u ON a.user_id = u.id 
+		ORDER BY a.timestamp DESC LIMIT 100`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var logs []models.AuditLog
+	for rows.Next() {
+		var l models.AuditLog
+		if err := rows.Scan(&l.ID, &l.UserID, &l.Username, &l.Action, &l.Details, &l.IPAddress, &l.Timestamp); err != nil {
+			continue
+		}
+		logs = append(logs, l)
+	}
+
+	json.NewEncoder(w).Encode(logs)
+}
+
+// Helper for audit logging
+func logAudit(userID int, action, details string, r *http.Request) {
+	ip := r.RemoteAddr
+	db.DB.Exec("INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)", userID, action, details, ip)
 }
 
 // GetWards returns the list of wards for a given Area Council with full details

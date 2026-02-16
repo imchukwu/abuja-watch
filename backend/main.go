@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/yiaga/abuja-watch/backend/internal/db"
 	"github.com/yiaga/abuja-watch/backend/internal/handlers"
+	authMiddleware "github.com/yiaga/abuja-watch/backend/internal/middleware"
 )
 
 func main() {
@@ -35,20 +36,38 @@ func main() {
 	})
 
 	r.Route("/api", func(r chi.Router) {
+
+		// Auth Routes
+		r.Post("/login", handlers.Login)
+
+		// Protected Routes
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.AuthMiddleware)
+
+			// Admin Only: User Management & Audit Logs
+			r.Group(func(r chi.Router) {
+				r.Use(func(next http.Handler) http.Handler {
+					return authMiddleware.RequireRole("admin", next.ServeHTTP)
+				})
+				r.Post("/users", handlers.CreateUser)
+				r.Get("/users", handlers.GetUsers)
+				r.Get("/audit-logs", handlers.GetAuditLogs)
+			})
+
+			// Protected Submission Routes (Available to admin and editor)
+			r.Post("/submit/logistics", handlers.SubmitLogistics)
+			r.Post("/submit/staffing", handlers.SubmitStaffing)
+			r.Post("/submit/integrity", handlers.SubmitIntegrity)
+			r.Post("/submit/results", handlers.SubmitResults)
+			r.Post("/area-councils/{lgaID}/parties", handlers.UpdateAreaCouncilParties)
+		})
+
+		// Public Read-Only Routes
 		r.Get("/area-councils", handlers.GetAreaCouncils)
 		r.Get("/area-councils/{lgaID}/wards", handlers.GetWards)
 		r.Get("/wards/{wardID}", handlers.GetWardDetails)
 		r.Get("/dashboard/stats", handlers.GetDashboardStats)
-
-		// Submission Routes
-		r.Post("/submit/logistics", handlers.SubmitLogistics)
-		r.Post("/submit/staffing", handlers.SubmitStaffing)
-		r.Post("/submit/integrity", handlers.SubmitIntegrity)
-		r.Post("/submit/results", handlers.SubmitResults)
-
-		// Party Configuration Routes
 		r.Get("/area-councils/{lgaID}/parties", handlers.GetAreaCouncilParties)
-		r.Post("/area-councils/{lgaID}/parties", handlers.UpdateAreaCouncilParties)
 	})
 
 	// Start Server

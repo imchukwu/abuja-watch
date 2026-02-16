@@ -84,9 +84,51 @@ export const api = {
     updateAreaCouncilParties: async (lgaId: string, parties: string[]) => {
         const res = await fetch(`${API_BASE}/area-councils/${lgaId}/parties`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
             body: JSON.stringify(parties),
         });
         if (!res.ok) throw new Error("Failed to update party configuration");
+    },
+
+    // Auth & Admin
+    login: async (username, password) => {
+        const res = await fetch(`${API_BASE}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+        });
+        if (!res.ok) throw new Error("Login failed");
+        return res.json();
+    },
+
+    getUsers: async () => {
+        const res = await fetch(`${API_BASE}/users`, {
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        return res.json();
+    },
+
+    createUser: async (user: any) => {
+        const res = await fetch(`${API_BASE}/users`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify(user),
+        });
+        if (!res.ok) throw new Error("Failed to create user");
+    },
+
+    getAuditLogs: async () => {
+        const res = await fetch(`${API_BASE}/audit-logs`, {
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch audit logs");
+        return res.json();
     },
 };

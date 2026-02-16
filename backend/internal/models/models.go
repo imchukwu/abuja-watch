@@ -9,6 +9,24 @@ type AreaCouncil struct {
 	State string `json:"state" db:"state"`
 }
 
+type User struct {
+	ID        int    `json:"id" db:"id"`
+	Username  string `json:"username" db:"username"`
+	Password  string `json:"password,omitempty" db:"password_hash"`
+	Role      string `json:"role" db:"role"`
+	CreatedAt string `json:"created_at" db:"created_at"`
+}
+
+type AuditLog struct {
+	ID        int    `json:"id" db:"id"`
+	UserID    int    `json:"user_id" db:"user_id"`
+	Username  string `json:"username"` // Joined field
+	Action    string `json:"action" db:"action"`
+	Details   string `json:"details" db:"details"`
+	IPAddress string `json:"ip_address" db:"ip_address"`
+	Timestamp string `json:"timestamp" db:"timestamp"`
+}
+
 // LGASummary represents the aggregated data for an Area Council
 type LGASummary struct {
 	ID                string         `json:"id"`

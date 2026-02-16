@@ -13,9 +13,20 @@ import { Separator } from "@/components/ui/separator";
 import { LGA_DATA, WardSummary } from "@/data/mockElectionData";
 import { api } from "@/services/api";
 import { PartyConfiguration } from "@/components/admin/PartyConfiguration";
+import { UserManagement } from "@/components/admin/UserManagement";
+import { AuditLog } from "@/components/admin/AuditLog";
+import { jwtDecode } from "jwt-decode";
 
 const Admin = () => {
     const { toast } = useToast();
+    const token = localStorage.getItem("token");
+    let userRole = "editor";
+    if (token) {
+        try {
+            const decoded: any = jwtDecode(token);
+            userRole = decoded.role;
+        } catch (e) { }
+    }
 
     // State for Incidents
     const [incidentForm, setIncidentForm] = useState({
@@ -198,6 +209,12 @@ const Admin = () => {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+    };
+
     return (
         <div className="min-h-screen bg-background">
             <Header />
@@ -206,15 +223,21 @@ const Admin = () => {
                     <h1 className="text-3xl font-bold">Election Admin Panel</h1>
                     <div className="flex gap-2">
                         <Button variant="outline">Export Data</Button>
-                        <Button variant="destructive">Emergency Stop</Button>
+                        <Button variant="secondary" onClick={handleLogout}>Logout</Button>
                     </div>
                 </div>
 
                 <Tabs defaultValue="incidents" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3 max-w-[600px]">
+                    <TabsList className={`grid w-full max-w-[800px] ${userRole === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
                         <TabsTrigger value="incidents">Log Incidents</TabsTrigger>
-                        <TabsTrigger value="results">Area Council Results</TabsTrigger>
-                        <TabsTrigger value="config">System Config</TabsTrigger>
+                        <TabsTrigger value="results">Results</TabsTrigger>
+                        <TabsTrigger value="config">Config</TabsTrigger>
+                        {userRole === 'admin' && (
+                            <>
+                                <TabsTrigger value="users">Users</TabsTrigger>
+                                <TabsTrigger value="audit">Audit</TabsTrigger>
+                            </>
+                        )}
                     </TabsList>
 
                     {/* Incidents Tab */}
@@ -565,6 +588,23 @@ const Admin = () => {
                     <TabsContent value="config">
                         <PartyConfiguration />
                     </TabsContent>
+
+                    {userRole === 'admin' && (
+                        <>
+                            <TabsContent value="users">
+                                <Card>
+                                    <CardHeader><CardTitle>User Management</CardTitle></CardHeader>
+                                    <CardContent><UserManagement /></CardContent>
+                                </Card>
+                            </TabsContent>
+                            <TabsContent value="audit">
+                                <Card>
+                                    <CardHeader><CardTitle>Audit Log</CardTitle></CardHeader>
+                                    <CardContent><AuditLog /></CardContent>
+                                </Card>
+                            </TabsContent>
+                        </>
+                    )}
                 </Tabs>
             </main>
         </div>
